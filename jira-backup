@@ -1,0 +1,43 @@
+#!/bin/bash
+
+CONFIG_FILE='/etc/jira-backup.conf'
+TIMESTAMP=$(date +'%Y-%m-%d-%H-%M')
+
+if [ -e ${CONFIG_FILE} ]; then
+    source ${CONFIG_FILE}
+else
+    echo "Error: ${CONFIG_FILE} missing"
+    exit 1
+fi
+
+ATTACHMENT_BACKUP_OUTPUT="${BACKUP_DIR}/jira-attachments-${TIMESTAMP}.tar"
+DATABASE_DUMP_OUTPUT="${BACKUP_DIR}/jira-database-dump-${TIMESTAMP}.sql"
+
+
+function setup() {
+    if [ ! -d "${BACKUP_DIR}" ]; then
+        echo "Creating ${BACKUP_DIR}"
+        mkdir -p "${BACKUP_DIR}"
+    fi
+}
+
+function backup_attachments() {
+    echo "Backing up Jira attachments"
+    /bin/tar -cpf ${ATTACHMENT_BACKUP_OUTPUT} ${ATTACHMENTS_PATH}
+    echo "Created ${ATTACHMENT_BACKUP_OUTPUT}"
+}
+
+function dump_database() {
+    echo "Dumping Jira database"
+    /usr/bin/mysqldump --add-drop-database --host="${DB_HOST}" --user="${DB_USER}" --password="${DB_PASS}" "${DB_NAME}" > "${DATABASE_DUMP_OUTPUT}"
+    echo "Created ${DATABASE_DUMP_OUTPUT}"
+}
+
+function main() {
+    echo "Backing up Jira"
+    setup
+    backup_attachments
+    dump_database
+}
+
+main
